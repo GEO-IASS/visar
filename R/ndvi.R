@@ -3,24 +3,24 @@
 #' This function developes a optimization algorithm based on correlation analysis between spectral parameter 'X' and y, which
 #' determines the best spectral bands of the full spectrum that are most predictive for 'y'.
 #'
-#' @param x A data set of spectral matrix data.
+#' @param x A matrix of spectral data, a row is a spectrum across all spectral bands.
 #' @param y A vector.
-#' @return bands(b1 b2) for NDVI = (b1 - b2)/(b1 + b2)
+#' @param w A vector of wavelength.
+#' @return NDVI = (b1 - b2)/(b1 + b2)
 #' @details
 #' This function runs, throughly, a calculation of NDVI = (Xi-Xj)/(Xi+Xj) using all the possible pairs/combinations of any two bands (Xi,Xj)
 #' within the full spectrum range. A correlation analysis is then performed between the y and all possible NDVIs (Xi,Xj), and it calculates
 #' the correlation coefficients (r) which indicates the predictive performance of each NDVI and its corresponding two-band combination. The
 #' output is the wavelength (nm) indicating the best two bands that produce the highest value of r.
-#' @seealso \code{cor}
+#' @seealso \code{\link{cor}}
 #' @examples
-#' load(exampleData)
 #' y <- exampleData[-1,1]
 #' x <- exampleData[-1,-1]
 #' w <- exampleData[1,-1]
-#' ndvi(x,y)
+#' ndvi(x,y,w)
 #' @export
 
-ndvi <- function(x,y){
+ndvi <- function(x,y,w){
 
   library(ggplot2)
   library(Matrix)
@@ -32,6 +32,7 @@ ndvi <- function(x,y){
   #  ------------------------------------------------------------------------
 
   n <- dim(x)[2] # Returns the Number of wavebands
+  wavelength <- w
 
   ## (Rj-Ri)/(Rj+Ri)
 
@@ -57,7 +58,7 @@ ndvi <- function(x,y){
 
   max(R2, na.rm = TRUE)
   ZZ <- as.matrix(R2)
-  str(ZZ)
+  # str(ZZ)
   max(ZZ, na.rm = TRUE)
 
 
@@ -72,22 +73,27 @@ ndvi <- function(x,y){
   ind_max
 
   bestBands = wavelength[ind_max[1,]]
-
+  print(as.vector(bestBands))
 
   #----------------------------------
   # plot ndvi
   #----------------------------------
 
+  ZZDF <- melt(ZZ)
+  w1_index <- ZZDF$Var1
+  w2_index <- ZZDF$Var2
+  ZZDF$Var1 <- wavelength[w1_index]
+  ZZDF$Var2 <- wavelength[w2_index]
   myPalette <- colorRampPalette(rev(brewer.pal(11, "Spectral")), space="Lab")
-  zp1 <- ggplot(melt(ZZ), aes(Var1+350-1,Var2+350-1, fill=value))
+  zp1 <- ggplot(ZZDF, aes(Var1,Var2, fill=value)) # Var1+350-1
   zp1 <- zp1 + geom_tile()
   zp1 <- zp1 + scale_fill_gradientn(colours = myPalette(100))
   # zp1 <- zp1 + scale_x_discrete(expand = c(0, 0))
   # zp1 <- zp1 + scale_y_discrete(expand = c(0, 0))
   zp1 <- zp1 + coord_equal()
   zp1 <- zp1 + theme_bw()
+  zp1 <- zp1 + xlab("Wavelength") + ylab("Wavelength")
   print(zp1)
 
 }
-
 
