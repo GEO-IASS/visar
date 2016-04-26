@@ -3,7 +3,8 @@
 #' This function developes a optimization algorithm based on correlation analysis between spectral parameter 'X' and y, which
 #' determines the best spectral bands of the full spectrum that are most predictive for 'y'.
 #'
-#' @param x data set of spectral matrix data
+#' @param x A data set of spectral matrix data.
+#' @param y A vector.
 #' @return bands(b1 b2) for NDVI = (b1 - b2)/(b1 + b2)
 #' @details
 #' This function runs, throughly, a calculation of NDVI = (Xi-Xj)/(Xi+Xj) using all the possible pairs/combinations of any two bands (Xi,Xj)
@@ -12,10 +13,14 @@
 #' output is the wavelength (nm) indicating the best two bands that produce the highest value of r.
 #' @seealso \code{cor}
 #' @examples
-#' ndvi()
+#' load(exampleData)
+#' y <- exampleData[-1,1]
+#' x <- exampleData[-1,-1]
+#' w <- exampleData[1,-1]
+#' ndvi(x,y)
 #' @export
 
-ndvi <- function(){
+ndvi <- function(x,y){
 
   library(ggplot2)
   library(Matrix)
@@ -26,34 +31,24 @@ ndvi <- function(){
 
   #  ------------------------------------------------------------------------
 
-  data <- read.csv('exampleData.csv')[1:20,1:952]
-  wavelength <- as.numeric(gsub("X","",names(data)[(1+1):952]))
+  n <- dim(x)[2] # Returns the Number of wavebands
 
-  data <- data.matrix(data) # devtools::use_data(data)
-
-  # data <- matrix(as.numeric(unlist(data)),nrow=nrow(data))
-
-  aa <- matrix(data[, 1]) # Variable of interest, e.g., Chl, N, LAI
-  ss <- data[, 2:ncol(data)]; # Reflectance spectra
-
-  n <- dim(ss)[2] # Returns the Number of wavebands
-
-  # (Rj-Ri)/(Rj+Ri)
+  ## (Rj-Ri)/(Rj+Ri)
 
   R2 <- Matrix(0,n,n,sparse = TRUE)  # Zero sparse matrix to storage Z coordinates
 
-  Rj <- ss
+  Rj <- x
 
   ones <- matrix(1,1,n)
 
   for (cI in 1:n){
-    Ri <- ss[,cI]
+    Ri <- x[,cI]
     Ri <- Ri %*% ones  # Turn Ri values to dimensional matrix
     # VI formular
     V <- (Rj-Ri)/(Rj+Ri)
 
     # Squared values (R2) of the Pearson Correlation coefficients
-    Rcorr <- (cor(aa, V))^2
+    Rcorr <- (cor(y, V))^2
     # To store the value of R2 (Z)
     # R2=R2+sparse([1:n],i,Rcorr,n,n);
     spR <- sparseMatrix(i = c(1:n),j = rep(cI,n), x = as.numeric(Rcorr), dims = c(n,n))
